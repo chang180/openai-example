@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
+Route::get('/poem', function () {
     $chat = new Chat();
 
     $poem = $chat
@@ -25,4 +25,42 @@ Route::get('/', function () {
     $smarterPoem = $chat->reply("Cool, can you write a poem about recursion in programming in Traditional Chinese?");
 
     return view('welcome', ['poem' => $smarterPoem]);
+});
+
+Route::get('/', function () {
+    if (session()->has('file') && session('flag')) {
+        session(['flag' => false]);
+        return view('roast');
+    }
+    session()->forget('file');
+    // session(['file' => file_get_contents(public_path('roasts/file.mp3'))]);
+    return view('roast');
+});
+
+Route::post('/roast', function () {
+    $attributes = request()->validate([
+        'topic' => ['required', 'string', 'min:2', 'max:255'],
+    ]);
+    $prompt = "Pleast roast {$attributes['topic']} in a sarcastic tone in Traditional Chinese.";
+
+    $mp3 = (new Chat())->send(
+        message: $prompt,
+        speech: true
+    );
+
+    $file = '/roasts/' . md5($mp3) . '.mp3';
+
+    if (!file_exists(public_path('roasts'))) {
+        mkdir(public_path('roasts'));
+    }
+    file_put_contents(public_path($file), $mp3);
+    session([
+        'file' => $file,
+        'flag' => true
+    ]);
+
+    return redirect('/')->with([
+        'file' => $file,
+        'flash' => 'Boom, Roasted!'
+    ]);
 });
