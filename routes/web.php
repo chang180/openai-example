@@ -1,8 +1,10 @@
 <?php
 
-use App\AI\Chat;
+use App\AI\Assistant;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
+use OpenAI\Laravel\Facades\OpenAI;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -16,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/poem', function () {
-    $chat = new Chat();
+    $chat = new Assistant();
 
     $poem = $chat
         ->systemMessage('Your are a poetic assistant ,skilled in explaining complex programming concepts with creative flair in traditional chinese.')
@@ -43,7 +45,7 @@ Route::post('/roast', function () {
     ]);
     $prompt = "Pleast roast {$attributes['topic']} in a sarcastic tone in Traditional Chinese.";
 
-    $mp3 = (new Chat())->send(
+    $mp3 = (new Assistant())->send(
         message: $prompt,
         speech: true
     );
@@ -63,4 +65,31 @@ Route::post('/roast', function () {
         'file' => $file,
         'flash' => 'Boom, Roasted!'
     ]);
+});
+
+Route::get('/image', function () {
+
+    return view('image', [
+        'messages' => session('messages', []),
+    ]);
+});
+
+Route::post('/image', function () {
+    $attributes = request()->validate([
+        'description' => ['required', 'string', 'min:3'],
+    ]);
+
+    $assistant = new Assistant(session('messages', []));
+
+    $assistant->visualize($attributes['description']);
+
+    session(['messages' => $assistant->messages()]);
+
+    return redirect('/image');
+});
+
+Route::post('/resetImage', function () {
+    session(['messages' => []]);
+
+    return redirect('/image');
 });
