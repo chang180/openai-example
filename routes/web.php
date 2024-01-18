@@ -17,6 +17,10 @@ use OpenAI\Laravel\Facades\OpenAI;
 |
 */
 
+Route::get('/', function () {
+    return view('welcome');
+});
+
 Route::get('/poem', function () {
     $chat = new Assistant();
 
@@ -26,10 +30,10 @@ Route::get('/poem', function () {
 
     $smarterPoem = $chat->reply("Cool, can you write a poem about recursion in programming in Traditional Chinese?");
 
-    return view('welcome', ['poem' => $smarterPoem]);
+    return view('poem', ['poem' => $smarterPoem]);
 });
 
-Route::get('/', function () {
+Route::get('/roast', function () {
     if (session()->has('file') && session('flag')) {
         session(['flag' => false]);
         return view('roast');
@@ -61,7 +65,7 @@ Route::post('/roast', function () {
         'flag' => true
     ]);
 
-    return redirect('/')->with([
+    return redirect('/roast')->with([
         'file' => $file,
         'flash' => 'Boom, Roasted!'
     ]);
@@ -93,3 +97,50 @@ Route::post('/resetImage', function () {
 
     return redirect('/image');
 });
+
+// spam detect example
+
+Route::get('/spam-detect', function () {
+
+    return view('spam-detect');
+});
+
+Route::post('/spam-detect', function () {
+    $attributes = request()->validate([
+        'body' => ['required', 'string', 'min:3'],
+    ]);
+    $response = OpenAI::chat()->create([
+        'model' => 'gpt-3.5-turbo-1106',
+        'messages' => [
+            ['role' => 'system', 'content' => 'You are a forum moderator with ability to produce JSON format reply.'],
+            [
+                'role' => 'user',
+                'content' => <<<EOT
+                Please inspect the following text and determine if it is spam.
+
+                {$attributes['body']}
+
+                Expected Response Example:
+
+                {
+                    "isSpam": true,
+                    "reason": "This is spam because it is an advertisement."
+                }
+                EOT,
+            ],
+        ],
+        // 'response_format' => ['type' => 'json_object']
+    ])->choices[0]->message->content;
+
+    $response = json_decode($response);
+    session(['response' => $response->isSpam ? 'This is spam because ' . $response->reason : 'This is not spam.']);
+    return redirect('/spam-detect');
+})->name('spam-detect');
+
+Route::get('/reset-spam-detect', function () {
+    session()->forget('response');
+    return redirect('/spam-detect');
+})->name('reset-spam-detect');
+
+
+
