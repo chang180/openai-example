@@ -1,8 +1,11 @@
 <?php
 
 use App\AI\Assistant;
+use App\Rules\SpamFree;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use OpenAI\Laravel\Facades\OpenAI;
 
 
@@ -106,34 +109,15 @@ Route::get('/spam-detect', function () {
 });
 
 Route::post('/spam-detect', function () {
-    $attributes = request()->validate([
-        'body' => ['required', 'string', 'min:3'],
-    ]);
-    $response = OpenAI::chat()->create([
-        'model' => 'gpt-3.5-turbo-1106',
-        'messages' => [
-            ['role' => 'system', 'content' => 'You are a forum moderator with ability to produce JSON format reply.'],
-            [
-                'role' => 'user',
-                'content' => <<<EOT
-                Please inspect the following text and determine if it is spam.
-
-                {$attributes['body']}
-
-                Expected Response Example:
-
-                {
-                    "isSpam": true,
-                    "reason": "This is spam because it is an advertisement."
-                }
-                EOT,
-            ],
+    request()->validate([
+        'body' => [
+            'required',
+            'string',
+            'min:3',
+            new SpamFree()
         ],
-        // 'response_format' => ['type' => 'json_object']
-    ])->choices[0]->message->content;
+    ]);
 
-    $response = json_decode($response);
-    session(['response' => $response->isSpam ? 'This is spam because ' . $response->reason : 'This is not spam.']);
     return redirect('/spam-detect');
 })->name('spam-detect');
 
@@ -141,6 +125,3 @@ Route::get('/reset-spam-detect', function () {
     session()->forget('response');
     return redirect('/spam-detect');
 })->name('reset-spam-detect');
-
-
-

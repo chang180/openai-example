@@ -20,6 +20,16 @@
             <button type="submit"
                 class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Submit</button>
             <a href="{{ route('reset-spam-detect') }}" class="btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Reset</a>
+            @if($errors->any())
+                <div class="mt-4">
+                    <h2 class="text-xl font-bold mb-2">Errors</h2>
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li class="text-red-500">{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             </form>
         @if (session('response'))
             <div class="mt-4">
@@ -29,6 +39,4 @@
         @endif
     </div>
 </body>
-
-
 </html>
