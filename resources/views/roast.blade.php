@@ -11,8 +11,16 @@
 
 <body class="h-full grid place-items-center p-6">
     @if (session('file'))
+        <div class="mb-4">
+            <audio controls autoplay volume="0.4">
+                <source src="{{ session('file') }}" type="audio/mp3">
+                Your browser does not support the audio tag.
+            </audio>
+        </div>
         <div>
-            <a href="{{ session('file') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" download>Download Audio</a>
+            <a href="{{ session('file') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                download>Download Audio</a>
+            <a href="/roast" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Roast an other</a>
             <a href="/" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Home</a>
         </div>
     @else

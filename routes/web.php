@@ -125,3 +125,43 @@ Route::get('/reset-spam-detect', function () {
     session()->forget('response');
     return redirect('/spam-detect');
 })->name('reset-spam-detect');
+
+// assistant example
+Route::get('/assistant', function () {
+    $file = OpenAI::files()->upload([
+        'purpose' => 'assistants',
+        'file' => fopen(storage_path('docs/parsing.md'), 'rb'),
+    ]);
+
+    $assistant = OpenAI::assistants()->create([
+        'model' => 'gpt-3.5-turbo-1106',
+        'name' => 'Laraparse Tutor',
+        'instructions' => 'You are a helpful programming teacher',
+        'tools' => [
+            ['type' => 'retrieval'],
+        ],
+        'file_ids' => [
+            $file->id,
+        ]
+    ]);
+
+    $run = OpenAI::threads()->createAndRun([
+        'assistant_id' => $assistant->id,
+        'thread' => [
+            'messages' => [
+                ['role' => 'user', 'content' => 'How do I grab the first paragraph?']
+            ]
+        ]
+    ]);
+
+    do {
+        sleep(1);
+        $run = OpenAI::threads()->runs()->retrieve(
+            threadId: $run->threadId,
+            runId: $run->id
+        );
+    }while ($run->status !== 'completed');
+
+    $messages = OpenAI::threads()->messages()->list($run->threadId);
+    dd($messages); // @todo : to be continued
+});
