@@ -2,11 +2,12 @@
 
 use App\AI\Assistant;
 use App\Rules\SpamFree;
+use App\AI\LaraparseAssistant;
+use OpenAI\Laravel\Facades\OpenAI;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
-use OpenAI\Laravel\Facades\OpenAI;
 
 
 /*
@@ -128,40 +129,12 @@ Route::get('/reset-spam-detect', function () {
 
 // assistant example
 Route::get('/assistant', function () {
-    $file = OpenAI::files()->upload([
-        'purpose' => 'assistants',
-        'file' => fopen(storage_path('docs/parsing.md'), 'rb'),
-    ]);
 
-    $assistant = OpenAI::assistants()->create([
-        'model' => 'gpt-3.5-turbo-1106',
-        'name' => 'Laraparse Tutor',
-        'instructions' => 'You are a helpful programming teacher',
-        'tools' => [
-            ['type' => 'retrieval'],
-        ],
-        'file_ids' => [
-            $file->id,
-        ]
-    ]);
+    $assistant = new LaraparseAssistant(config('openai.assistants.id'));
 
-    $run = OpenAI::threads()->createAndRun([
-        'assistant_id' => $assistant->id,
-        'thread' => [
-            'messages' => [
-                ['role' => 'user', 'content' => 'How do I grab the first paragraph?']
-            ]
-        ]
-    ]);
+    $messages = $assistant->createThread()
+        ->write('How do I grab the first paragraph using Laraparse?')
+        ->send();
 
-    do {
-        sleep(1);
-        $run = OpenAI::threads()->runs()->retrieve(
-            threadId: $run->threadId,
-            runId: $run->id
-        );
-    }while ($run->status !== 'completed');
-
-    $messages = OpenAI::threads()->messages()->list($run->threadId);
-    dd($messages); // @todo : to be continued
+    dd($messages);
 });
