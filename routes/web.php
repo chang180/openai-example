@@ -2,6 +2,7 @@
 
 use App\AI\Assistant;
 use App\Rules\SpamFree;
+use App\AI\OpenAIClient;
 use App\AI\LaraparseAssistant;
 use OpenAI\Laravel\Facades\OpenAI;
 use Illuminate\Support\Facades\App;
@@ -130,9 +131,8 @@ Route::get('/reset-spam-detect', function () {
 // assistant example
 Route::get('/assistant', function () {
 
-    $assistant = new LaraparseAssistant(config('openai.assistants.id'));
-
-    $messages = $assistant->createThread()
+    $messages = (new LaraparseAssistant(config('openai.assistants.id'), new OpenAIClient()))
+        ->createThread()
         ->write('How do I grab the first paragraph using Laraparse?')
         ->send();
 
